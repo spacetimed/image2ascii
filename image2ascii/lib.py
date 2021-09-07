@@ -70,15 +70,15 @@ class RgbToString:
         self.asciiTable: Dict[int, str] = OrderedDict()
         self.asciiTable[0]   = Style.DIM    + ' .'
         self.asciiTable[20]  = Style.DIM    + '.,'
-        self.asciiTable[40]  = Style.DIM    + '.;'
-        self.asciiTable[80]  = Style.NORMAL + ';;'
-        self.asciiTable[120] = Style.NORMAL + 'Oo'
+        self.asciiTable[40]  = Style.BRIGHT    + '.;'
+        self.asciiTable[80]  = Style.BRIGHT + ';;'
+        self.asciiTable[120] = Style.BRIGHT + 'Oo'
         self.asciiTable[160] = Style.BRIGHT + '@o'
         self.asciiTable[200] = Style.BRIGHT + '@@'
         self.asciiTable[225] = Style.BRIGHT + '#@'
         self.asciiTable[250] = Style.BRIGHT + '##'
 
-        self.Threshold: int = 120
+        self.Threshold: int = 100
         self.grayThreshold: int = 10
 
     def __call__(self, RGB, symbol: bool = False) -> str:
