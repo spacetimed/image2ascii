@@ -27,6 +27,7 @@ class Create:
         self.load()
         self.buildOutput()
         return
+
     def load(self) -> None:
         if not os.path.exists(self.filename):
             self.logger.msg(f'failed to load <{self.filename}>', error='FATAL')
@@ -34,6 +35,7 @@ class Create:
         else:
             self.logger.msg(f'image loaded <{self.filename}> (output dimensions: {self.width},{self.height})')
         return None
+    
     def buildOutput(self) -> bool:
         self.logger.msg('ascii render', render=self.width)
         self.image = Image.open(self.filename)
@@ -48,23 +50,6 @@ class Create:
             print()
         print('- ' * self.width, '+')
         return None
-        
-class Logger:
-    def __init__(self, objectName: str) -> None:
-        self.objectName = objectName
-        self.msg('module loaded')
-        return
-    def msg(self, message: str, error: str = '', render: bool = False) -> bool:
-        name = self.objectName
-        color = Fore.GREEN
-        if render:
-            color = f'{Fore.CYAN}@@'
-            name = message
-            message = ''
-        if error != '':
-            error = f'{Fore.RED}[{error}_ERROR] {Style.RESET_ALL}'
-        print(f'{color}[{name}]: {error}{Style.RESET_ALL}{message}')
-        return True
 
 class RgbToString:
     def __init__(self) -> None:
@@ -75,6 +60,8 @@ class RgbToString:
             Fore.YELLOW :  [1, 1, 0],
             Fore.BLUE :    [0, 0, 1],
             Fore.WHITE :   [1, 1, 1], #supported (not included) MAGENTA, CYAN
+            Fore.MAGENTA : [1, 0, 1],
+            Fore.CYAN :    [0, 1, 1],
         }
 
         self.asciiTable: Dict[int, str] = OrderedDict()
@@ -95,7 +82,8 @@ class RgbToString:
         RGB: Tuple = RGB
         rgbMAP: List = [int(x > self.Threshold) for x in RGB]
 
-        if (abs(RGB[0] - RGB[1]) <= self.grayThreshold):
+        if ( (abs(RGB[0] - RGB[1]) <= self.grayThreshold) \
+         and (abs(RGB[0] - RGB[2]) <= self.grayThreshold)):
             colorName = Fore.WHITE
             brightness = int(sum(RGB) / len(RGB))
             __ascii = self.brightnessToAsciiSymbol(brightness)
@@ -115,7 +103,24 @@ class RgbToString:
             return self.asciiTable[keys[0]]
         if(b >= keys[-2]):
             return self.asciiTable[keys[-1]]
-        return '??'
-        #for i in range(len(keys)):
-        #    if(b >= keys[i] and b <= keys[i+1]):
-        #        return self.asciiTable[keys[i]]
+        for i in range(len(keys)):
+            if(b >= keys[i] and b <= keys[i+1]):
+                return self.asciiTable[keys[i]]
+        
+class Logger:
+    def __init__(self, objectName: str) -> None:
+        self.objectName = objectName
+        self.msg('module loaded')
+        return
+    
+    def msg(self, message: str, error: str = '', render: bool = False) -> bool:
+        name = self.objectName
+        color = Fore.GREEN
+        if render:
+            color = f'{Fore.CYAN}@@'
+            name = message
+            message = ''
+        if error != '':
+            error = f'{Fore.RED}[{error}_ERROR] {Style.RESET_ALL}'
+        print(f'{color}[{name}]: {error}{Style.RESET_ALL}{message}')
+        return True
