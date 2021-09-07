@@ -3,7 +3,7 @@ import sys
 from collections import OrderedDict
 
 from colorama import Fore, Back, Style
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 from typing import List
 from typing import Any
@@ -14,13 +14,14 @@ SETTINGS: Dict[str, int] = {
 
     'default_width' : 10,
     'default_height' : 10,
-    'show_black' : False,
+    'show_black' : True,
     'output_file' : 'output.txt',
 
 }
 
 class Create:
     def __init__(self, filename: str, width: int, height: int, greySave: bool = False, colorSave: bool = False) -> None:
+
         self.logger = Logger(__name__)
         self.RgbToString = RgbToString()
         self.filename = filename
@@ -34,8 +35,10 @@ class Create:
         self.tmpFile: Any = None
         self.toWrite: str = ''
         self.outputFileName = SETTINGS['output_file']
+
         self.load()
         self.buildOutput()
+
         return
 
     def load(self) -> None:
@@ -44,19 +47,23 @@ class Create:
             sys.exit()
         else:
             self.logger.msg(f'image loaded <{self.filename}> (output dimensions: {self.width},{self.height})')
+
         return None
     
     def buildOutput(self) -> bool:
         self.logger.msg('result', render=self.width)
         self.image = Image.open(self.filename)
-        tmpImage = self.image.resize((self.width, self.height))
+        enhancer = ImageEnhance.Contrast(self.image)
+        tmpImage = enhancer.enhance(1.5)
+        tmpImage = tmpImage.resize((self.width, self.height))
+        tmpImage.save('ok.png')
         self.colorMap = [[0] * self.width for i in range(self.height)]
-        print('- ' * self.width, '+')
 
         if self.saveToFile:
             self.tmpFile = open(self.outputFileName, 'w')
             self.toWrite = ''
 
+        print('- ' * self.width, '+')
         for y in range(self.height):
             for x in range(self.width):
                 self.colorMap[y][x] = (tmpImage.getpixel((x,y)))
@@ -71,7 +78,6 @@ class Create:
             print()
             if self.saveToFile:
                 self.toWrite += '\n'
-
         print('- ' * self.width, '+')
 
         if self.saveToFile:
@@ -83,18 +89,20 @@ class Create:
 
 class RgbToString:
     def __init__(self) -> None:
+
         self.colorBank: Dict[str, List] = {
             Fore.BLACK :   [0, 0, 0],
             Fore.RED :     [1, 0, 0],
             Fore.GREEN :   [0, 1, 0],
             Fore.YELLOW :  [1, 1, 0],
             Fore.BLUE :    [0, 0, 1],
-            Fore.WHITE :   [1, 1, 1], #supported (not included) MAGENTA, CYAN
+            Fore.WHITE :   [1, 1, 1], 
             Fore.MAGENTA : [1, 0, 1],
             Fore.CYAN :    [0, 1, 1],
         }
 
         self.asciiTable: Dict[int, List] = OrderedDict()
+
         self.asciiTable[0]   = [Style.DIM,    ' .']
         self.asciiTable[20]  = [Style.DIM,    '.,']
         self.asciiTable[40]  = [Style.NORMAL, '.;']
@@ -111,19 +119,17 @@ class RgbToString:
         self.Threshold: int = 100
         self.grayThreshold: int = 10
 
-    def __call__(self, RGB, symbol: bool = False) -> str:
-        RGB: Tuple = RGB
+    def __call__(self, RGB_init, symbol: bool = False) -> str:
+        RGB: Tuple = (RGB_init) if (len(RGB_init) == 3) else (( RGB_init[0], RGB_init[1], RGB_init[2] ))
         rgbMAP: List = [int(x > self.Threshold) for x in RGB]
-
-        brightness = (0.2126 * RGB[0] + 0.7152 * RGB[1] + 0.0722 * RGB[2]) #luminance 
+        brightness = (0.2126 * RGB[0] + 0.7152 * RGB[1] + 0.0722 * RGB[2]) #Relative Luminance Formula (from wiki) 
 
         if ( (abs(RGB[0] - RGB[1]) <= self.grayThreshold) \
-         and (abs(RGB[0] - RGB[2]) <= self.grayThreshold)):
+         and (abs(RGB[0] - RGB[2]) <= self.grayThreshold) ):
             colorName = Fore.WHITE
             __asciiList: List = self.brightnessToAsciiSymbol(brightness)
             __ascii = __asciiList[1]
             colorName += __asciiList[0]
-            brightness = int(sum(RGB) / len(RGB))
             return (colorName, __ascii) if (symbol) else (colorName)
 
         for colorName, colorValues in self.colorBank.items():
@@ -131,20 +137,25 @@ class RgbToString:
                 __asciiList: List = self.brightnessToAsciiSymbol(brightness)
                 __ascii = __asciiList[1]
                 colorName += __asciiList[0]
-                brightness = int(sum(RGB) / len(RGB))
                 return (colorName, __ascii) if (symbol) else (colorName)
 
-        return (Fore.WHITE, '??') if (symbol) else (Fore.WHITE)
+        #return (Fore.WHITE, f'  ?<{RGB}>?  ') if (symbol) else (Fore.WHITE) #could not find suitable color
+        return (Fore.WHITE, '??') if (symbol) else (Fore.WHITE) #could not find suitable color
 
     def brightnessToAsciiSymbol(self, b: int) -> str:
         keys: List = list(self.asciiTable.keys())
+
         if(b <= keys[1]):
             return self.asciiTable[keys[0]][0], self.asciiTable[keys[0]][1]
+
         if(b >= keys[-2]):
             return self.asciiTable[keys[-1]][0], self.asciiTable[keys[-1]][1]
+
         for i in range(len(keys)):
             if(b >= keys[i] and b <= keys[i+1]):
                 return self.asciiTable[keys[i]][0], self.asciiTable[keys[i]][1]
+            
+        return None
         
 class Logger:
     def __init__(self, objectName: str) -> None:
@@ -153,10 +164,10 @@ class Logger:
         return
     
     def msg(self, message: str, error: str = '', render: bool = False) -> bool:
-        name = self.objectName
-        color = Fore.GREEN
+        name: str = self.objectName
+        color: Any = Fore.GREEN
         if render:
-            color = f'{Fore.CYAN}{Style.BRIGHT}@'
+            color = f'\n{Fore.CYAN}{Style.BRIGHT} @'
             name = message
             message = ''
         if error != '':

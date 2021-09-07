@@ -16,7 +16,7 @@ def main():
                             width = args.width, \
                             height = args.height, \
                             greySave = args.greysave, \
-                            colorSave = args.colorsave)
+                            colorSave = args.colorsave )
 
 if __name__ == '__main__':
     main()
