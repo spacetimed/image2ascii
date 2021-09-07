@@ -4,7 +4,7 @@ from colorama import Fore, Back, Style
 class BootScreen:
     def __init__(self) -> None:
         colorama_init()
-        print(Fore.BLUE, end='')
+        print(Style.BRIGHT, Fore.BLUE, end='')
         print("""
   _                              ____                   _ _ 
  (_)_ __ ___   __ _  __ _  ___  |___ \    __ _ ___  ___(_(_)

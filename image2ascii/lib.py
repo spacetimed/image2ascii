@@ -10,20 +10,30 @@ from typing import Any
 from typing import Tuple
 from typing import Dict
 
-SETTINGS = {
-    'default_width' : 10, #Height/Width if argument is not passed
-    'default_height' : 10, # "
+SETTINGS: Dict[str, int] = {
+
+    'default_width' : 10,
+    'default_height' : 10,
+    'show_black' : False,
+    'output_file' : 'output.txt',
+
 }
 
 class Create:
-    def __init__(self, filename: str, width: int, height: int) -> None:
+    def __init__(self, filename: str, width: int, height: int, greySave: bool = False, colorSave: bool = False) -> None:
         self.logger = Logger(__name__)
         self.RgbToString = RgbToString()
         self.filename = filename
         self.width = width or SETTINGS['default_width']
         self.height = height or SETTINGS['default_height']
         self.colorMap: List[List[int]] = [[]]
-        self.image: Any = None #Pillow does not support typing yet, from what I've gathered
+        self.image: Any = None
+        self.saveToFile = (greySave or colorSave)
+        self.greySave = greySave
+        self.colorSave = colorSave
+        self.tmpFile: Any = None
+        self.toWrite: str = ''
+        self.outputFileName = SETTINGS['output_file']
         self.load()
         self.buildOutput()
         return
@@ -37,11 +47,15 @@ class Create:
         return None
     
     def buildOutput(self) -> bool:
-        self.logger.msg('ascii render', render=self.width)
+        self.logger.msg('result', render=self.width)
         self.image = Image.open(self.filename)
         tmpImage = self.image.resize((self.width, self.height))
         self.colorMap = [[0] * self.width for i in range(self.height)]
         print('- ' * self.width, '+')
+
+        if self.saveToFile:
+            self.tmpFile = open(self.outputFileName, 'w')
+            self.toWrite = ''
 
         for y in range(self.height):
             for x in range(self.width):
@@ -49,9 +63,22 @@ class Create:
                 localize = self.RgbToString(self.colorMap[y][x], symbol=True)
                 print(Style.BRIGHT, end='')
                 print(f'{localize[0]}{localize[1]}{Style.RESET_ALL}', end='')
+                if self.saveToFile:
+                    if self.colorSave:
+                        self.toWrite += localize[0] + localize[1]
+                    elif self.greySave:
+                        self.toWrite += localize[1]
             print()
+            if self.saveToFile:
+                self.toWrite += '\n'
 
         print('- ' * self.width, '+')
+
+        if self.saveToFile:
+            self.tmpFile.write(self.toWrite)
+            self.tmpFile.close()
+            self.logger.msg(f'output successfully saved to <{self.outputFileName}>.')
+
         return None
 
 class RgbToString:
@@ -67,16 +94,19 @@ class RgbToString:
             Fore.CYAN :    [0, 1, 1],
         }
 
-        self.asciiTable: Dict[int, str] = OrderedDict()
-        self.asciiTable[0]   = Style.DIM    + ' .'
-        self.asciiTable[20]  = Style.DIM    + '.,'
-        self.asciiTable[40]  = Style.BRIGHT    + '.;'
-        self.asciiTable[80]  = Style.BRIGHT + ';;'
-        self.asciiTable[120] = Style.BRIGHT + 'Oo'
-        self.asciiTable[160] = Style.BRIGHT + '@o'
-        self.asciiTable[200] = Style.BRIGHT + '@@'
-        self.asciiTable[225] = Style.BRIGHT + '#@'
-        self.asciiTable[250] = Style.BRIGHT + '##'
+        self.asciiTable: Dict[int, List] = OrderedDict()
+        self.asciiTable[0]   = [Style.DIM,    ' .']
+        self.asciiTable[20]  = [Style.DIM,    '.,']
+        self.asciiTable[40]  = [Style.NORMAL, '.;']
+        self.asciiTable[80]  = [Style.BRIGHT, ';;']
+        self.asciiTable[120] = [Style.BRIGHT, 'Oo']
+        self.asciiTable[160] = [Style.BRIGHT, '@o']
+        self.asciiTable[200] = [Style.BRIGHT, '@@']
+        self.asciiTable[225] = [Style.BRIGHT, '#@']
+        self.asciiTable[250] = [Style.BRIGHT, '##']
+
+        if not SETTINGS['show_black']:
+            self.asciiTable[0][1] = '  '
 
         self.Threshold: int = 100
         self.grayThreshold: int = 10
@@ -85,18 +115,23 @@ class RgbToString:
         RGB: Tuple = RGB
         rgbMAP: List = [int(x > self.Threshold) for x in RGB]
 
+        brightness = (0.2126 * RGB[0] + 0.7152 * RGB[1] + 0.0722 * RGB[2]) #luminance 
+
         if ( (abs(RGB[0] - RGB[1]) <= self.grayThreshold) \
          and (abs(RGB[0] - RGB[2]) <= self.grayThreshold)):
             colorName = Fore.WHITE
-            #brightness = int(sum(RGB) / len(RGB))
-            brightness = (0.2126 * RGB[0] + 0.7152 * RGB[1] + 0.0722 * RGB[2]) #luminance 
-            __ascii = self.brightnessToAsciiSymbol(brightness)
+            __asciiList: List = self.brightnessToAsciiSymbol(brightness)
+            __ascii = __asciiList[1]
+            colorName += __asciiList[0]
+            brightness = int(sum(RGB) / len(RGB))
             return (colorName, __ascii) if (symbol) else (colorName)
 
         for colorName, colorValues in self.colorBank.items():
             if(rgbMAP == colorValues):
+                __asciiList: List = self.brightnessToAsciiSymbol(brightness)
+                __ascii = __asciiList[1]
+                colorName += __asciiList[0]
                 brightness = int(sum(RGB) / len(RGB))
-                __ascii = self.brightnessToAsciiSymbol(brightness)
                 return (colorName, __ascii) if (symbol) else (colorName)
 
         return (Fore.WHITE, '??') if (symbol) else (Fore.WHITE)
@@ -104,12 +139,12 @@ class RgbToString:
     def brightnessToAsciiSymbol(self, b: int) -> str:
         keys: List = list(self.asciiTable.keys())
         if(b <= keys[1]):
-            return self.asciiTable[keys[0]]
+            return self.asciiTable[keys[0]][0], self.asciiTable[keys[0]][1]
         if(b >= keys[-2]):
-            return self.asciiTable[keys[-1]]
+            return self.asciiTable[keys[-1]][0], self.asciiTable[keys[-1]][1]
         for i in range(len(keys)):
             if(b >= keys[i] and b <= keys[i+1]):
-                return self.asciiTable[keys[i]]
+                return self.asciiTable[keys[i]][0], self.asciiTable[keys[i]][1]
         
 class Logger:
     def __init__(self, objectName: str) -> None:
@@ -121,7 +156,7 @@ class Logger:
         name = self.objectName
         color = Fore.GREEN
         if render:
-            color = f'{Fore.CYAN}@@'
+            color = f'{Fore.CYAN}{Style.BRIGHT}@'
             name = message
             message = ''
         if error != '':
