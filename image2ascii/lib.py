@@ -42,12 +42,15 @@ class Create:
         tmpImage = self.image.resize((self.width, self.height))
         self.colorMap = [[0] * self.width for i in range(self.height)]
         print('- ' * self.width, '+')
+
         for y in range(self.height):
             for x in range(self.width):
                 self.colorMap[y][x] = (tmpImage.getpixel((x,y)))
                 localize = self.RgbToString(self.colorMap[y][x], symbol=True)
+                print(Style.BRIGHT, end='')
                 print(f'{localize[0]}{localize[1]}{Style.RESET_ALL}', end='')
             print()
+
         print('- ' * self.width, '+')
         return None
 
@@ -65,15 +68,15 @@ class RgbToString:
         }
 
         self.asciiTable: Dict[int, str] = OrderedDict()
-        self.asciiTable[0]   = ' .'
-        self.asciiTable[20]  = '.,'
-        self.asciiTable[40]  = '.;'
-        self.asciiTable[80]  = ';;'
-        self.asciiTable[120] = 'Oo'
-        self.asciiTable[160] = '@o'
-        self.asciiTable[200] = '@@'
-        self.asciiTable[225] = '#@'
-        self.asciiTable[250] = '##'
+        self.asciiTable[0]   = Style.DIM    + ' .'
+        self.asciiTable[20]  = Style.DIM    + '.,'
+        self.asciiTable[40]  = Style.DIM    + '.;'
+        self.asciiTable[80]  = Style.NORMAL + ';;'
+        self.asciiTable[120] = Style.NORMAL + 'Oo'
+        self.asciiTable[160] = Style.BRIGHT + '@o'
+        self.asciiTable[200] = Style.BRIGHT + '@@'
+        self.asciiTable[225] = Style.BRIGHT + '#@'
+        self.asciiTable[250] = Style.BRIGHT + '##'
 
         self.Threshold: int = 120
         self.grayThreshold: int = 10
@@ -85,7 +88,8 @@ class RgbToString:
         if ( (abs(RGB[0] - RGB[1]) <= self.grayThreshold) \
          and (abs(RGB[0] - RGB[2]) <= self.grayThreshold)):
             colorName = Fore.WHITE
-            brightness = int(sum(RGB) / len(RGB))
+            #brightness = int(sum(RGB) / len(RGB))
+            brightness = (0.2126 * RGB[0] + 0.7152 * RGB[1] + 0.0722 * RGB[2]) #luminance 
             __ascii = self.brightnessToAsciiSymbol(brightness)
             return (colorName, __ascii) if (symbol) else (colorName)
 
