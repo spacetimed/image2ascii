@@ -1,7 +1,7 @@
-import os.path
 import sys
-from collections import OrderedDict
+import os.path
 
+from collections import OrderedDict
 from colorama import Fore, Back, Style
 from PIL import Image, ImageEnhance
 
@@ -57,7 +57,7 @@ class Create:
         tmpImage = enhancer.enhance(1.5)
         tmpImage = tmpImage.resize((self.width, self.height))
         tmpImage.save('ok.png')
-        self.colorMap = [[0] * self.width for i in range(self.height)]
+        self.colorMap = [[0] * self.width] * self.height
 
         if self.saveToFile:
             self.tmpFile = open(self.outputFileName, 'w')
@@ -139,7 +139,6 @@ class RgbToString:
                 colorName += __asciiList[0]
                 return (colorName, __ascii) if (symbol) else (colorName)
 
-        #return (Fore.WHITE, f'  ?<{RGB}>?  ') if (symbol) else (Fore.WHITE) #could not find suitable color
         return (Fore.WHITE, '??') if (symbol) else (Fore.WHITE) #could not find suitable color
 
     def brightnessToAsciiSymbol(self, b: int) -> str:
