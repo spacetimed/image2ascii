@@ -1,10 +1,8 @@
 # image2ascii
-This is tool converts images inside a directory to ASCII characters. It can be used to transform images into text. Output is colored in most terminals, including Windows command-line and Linux terminal.
+This tool converts images inside a directory to ASCII characters. It can be used to transform images into text. Output is colored in most terminals, including Windows command-line and Linux terminal.
 
 -----
 ## Examples
-
------
 
 **Example 1**
 
@@ -97,7 +95,7 @@ Now that the required packages have been installed, you can run **image2ascii** 
 ```
 python3 run.py -f filename.png -W 40 -H 40
 ```
-The command above will open "filename.png" (from the same directory), and display a 40x40 command output. A full breakdown of all the possible flags in the command is given below. 
+The command above will open "filename.png" (from the same directory), and display a 40x40 command line output. A full breakdown of all the possible setting flags in the above command is given below. 
 
 -----
 ## Settings
@@ -114,6 +112,6 @@ Argument | Function | Syntax Example
 
 -----
 ## Compatibility
-As of September 2021, **image2ascii** has not been tested completely in all operating systems and terminals. So far, it is expected to work in both Linux and Windows.
+As of September 2021, **image2ascii** has not been tested completely in all operating systems and terminals. So far, it is expected to work in most Linux and Windows terminals. Python 3.6+ is recommended.
 
-The color accuracy in the script may be off for certain images, and may require tweaking of the image contrast or the RGB dominant color detection algorithm. Simple, small images will work best with **image2ascii**, such as in _Example 4_ above.
+The color accuracy in the script may be off for certain images, and may require tweaking of the image contrast or the RGB dominant color detection algorithm. Both of these can be adjusted by modifying `lib.py`. Vibrant, small images will work best with **image2ascii**, such as in _Example 4_ above.
