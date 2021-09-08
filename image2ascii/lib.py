@@ -6,7 +6,7 @@ from collections import OrderedDict
 from colorama import Fore, Back, Style
 from PIL import Image, ImageEnhance
 
-from typing import List
+from typing import List, Sized
 from typing import Any
 from typing import Tuple
 from typing import Dict
@@ -48,15 +48,18 @@ class Create:
         if not os.path.exists(self.filename):
             self.logger.msg(f'failed to load <{self.filename}>', error='FATAL')
             sys.exit()
-        else:
-            self.logger.msg(f'image loaded <{self.filename}> (output dimensions: {self.width},{self.height})')
         return None
     
     def render(self) -> bool:
         self.logger.msg('result', render=self.width)
         self.image = Image.open(self.filename)
+        if(self.width != SETTINGS['default_width'] and self.height == SETTINGS['default_width']):
+            realW, realH = self.image.size
+            factor = self.width / realW
+            self.height = int( realH * factor )
+        self.logger.msg(f'image loaded <{self.filename}> (output dimensions: {self.width},{self.height})')
         enhancer: Any = ImageEnhance.Contrast(self.image)
-        tmpImage: Image = enhancer.enhance(1.5)
+        tmpImage: Image = enhancer.enhance(1.4)
         tmpImage: Image = tmpImage.resize((self.width, self.height))
         self.colorMap = [[0] * self.width] * self.height
 
@@ -104,15 +107,20 @@ class RgbToString:
         }
 
         self.asciiTable: Dict[int, List] = OrderedDict()
-        self.asciiTable[0]   = [Style.DIM,    ' .']
-        self.asciiTable[20]  = [Style.DIM,    '.,']
-        self.asciiTable[40]  = [Style.NORMAL, '.;']
-        self.asciiTable[80]  = [Style.NORMAL, '.;']
-        self.asciiTable[120] = [Style.NORMAL, '@;']
-        self.asciiTable[160] = [Style.NORMAL, '@$']
-        self.asciiTable[200] = [Style.BRIGHT, '@@']
-        self.asciiTable[225] = [Style.BRIGHT, '#@']
-        self.asciiTable[250] = [Style.BRIGHT, '##']
+        self.asciiTable[0]   =  [Style.DIM,    ' .']
+        self.asciiTable[20]  =  [Style.DIM,    ' ,']
+        self.asciiTable[40]  =  [Style.DIM,    '.,']
+        self.asciiTable[60]  =  [Style.DIM,    '.;']
+        self.asciiTable[80]  =  [Style.NORMAL, 'q;']
+        self.asciiTable[100] =  [Style.NORMAL, '3;']
+        self.asciiTable[110] =  [Style.NORMAL, 'T;']
+        self.asciiTable[120] =  [Style.NORMAL, 'Pl']
+        self.asciiTable[140] =  [Style.NORMAL, 'P9']
+        self.asciiTable[160] =  [Style.NORMAL, '$j']
+        self.asciiTable[180] =  [Style.BRIGHT, '$i']
+        self.asciiTable[200] =  [Style.BRIGHT, '#$']
+        self.asciiTable[220] =  [Style.BRIGHT, '@#']
+        self.asciiTable[240] =  [Style.BRIGHT, '@@']
 
         if not SETTINGS['show_black']:
             self.asciiTable[0][1] = '  '
@@ -135,6 +143,10 @@ class RgbToString:
             return (colorName, __ascii) if (symbol) else (colorName)
 
         #if color
+        if(rgbMAP == [0,0,0]):
+            #print('_==>', end='')
+            rgbMAP[RGB.index(max(RGB))] = True
+
         for colorName, colorValues in self.colorBank.items():
             if(rgbMAP == colorValues):
                 __asciiList: List = self.brightnessToAsciiSymbol(brightness)
